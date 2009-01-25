@@ -357,7 +357,14 @@ This function requires 4 mandatory arguments, the 5th is optional.
 
 =item 1. B<$config_ref>: the hash reference to the configuration
 
-=item 2. B<$account>: in the form account_name - account number
+=item 2. B<$account>: in the form account_name - account number. 
+
+=over
+
+ Current Account have to be in the form 'Switch Current A/C - xyzt'
+ Visa Card account have to be in the form 'Visa Card - xyzt'
+
+=back
 
 =item 3. B<$from>: from date, in format dd/mm/yyyy
 
