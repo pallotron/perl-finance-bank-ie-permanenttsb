@@ -1,3 +1,6 @@
-- gnuplot graph
+- balance_graph(accountname, from, to, fileoutput)
+  uses gnuplot to graph
+
 - main shell command called ptsb
+
 - test units

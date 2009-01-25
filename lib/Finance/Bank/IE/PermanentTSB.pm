@@ -15,7 +15,7 @@ Features:
 =item * B<account(s) balance>: retrieves the balance for all the accounts
 you have set up (current account, visa card, etc.) 
 
-=item * B<account(s) statement> (to be implemented): retrieves the
+=item * B<account(s) statement>: retrieves the
 statement for a particular account, in a range of date. 
 
 =item * B<mobile phone top-up> (to be implemented): top up your mobile
@@ -74,7 +74,7 @@ use constant {
 
 =over
 
-B<This is private function used by other function within the module.
+B<This is a private function used by other function within the module.
 You don't need to call it directly from you code!>
 
 This function performs the login. It takes just one required argument,
@@ -193,7 +193,7 @@ sub login {
 
 =over
 
-B<This is private function used by other function within the module.
+B<This is a private function used by other function within the module.
 You don't need to call it directly from you code!>
 
 This is used for the second step of the login process.
@@ -363,7 +363,7 @@ This function requires 4 mandatory arguments, the 5th is optional.
 
 =item 4. B<$to>: to date, in format dd/mm/yyyy
 
-=item 5. B<type> (optional): type of statement (optional). Default: ALL.
+=item 5. B<$type> (optional): type of statement (optional). Default: ALL.
 It can be WITHDRAWAL, DEPOSIT or ALL.
 
 =back
