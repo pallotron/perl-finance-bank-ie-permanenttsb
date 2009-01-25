@@ -1,0 +1,12 @@
+example_dev.pl
+old
+Makefile
+Makefile.old
+notes
+TODO
+blib
+.cvsignore
+.*\.swp
+t/tmp
+.svn
+.git
