@@ -1,33 +1,3 @@
-package Finance::Bank::IE::PermanentTSB;
-
-our $VERSION = '0.02';
-
-use strict;
-use warnings;
-use Data::Dumper;
-use WWW::Mechanize;
-use HTML::TokeParser;
-use Carp qw(croak carp);
-use Date::Calc qw(check_date);
-
-use base 'Exporter';
-# export by default the check_balance function and the constants
-our @EXPORT = qw(check_balance ALL WITHDRAWAL DEPOSIT);
-our @EXPORT_OK = qw(mobile_topup account_statement);
-
-my %cached_cfg;
-my $agent;
-my $lastop = 0;
-
-my $BASEURL = "https://www.open24.ie/";
-
-# constant to be used with the account_statement() function
-use constant {
-    ALL =>        0,
-    WITHDRAWAL => 1,
-    DEPOSIT =>    2,
-};
-
 =head1 NAME
 
 Finance::Bank::IE::PermanentTSB - Perl Interface to the PermanentTSB
@@ -67,6 +37,38 @@ to an hash which contains the configuration:
         "pan" => "your personal access number",
         "debug" => 1,
     );
+
+=cut
+
+package Finance::Bank::IE::PermanentTSB;
+
+our $VERSION = '0.03';
+
+use strict;
+use warnings;
+use Data::Dumper;
+use WWW::Mechanize;
+use HTML::TokeParser;
+use Carp qw(croak carp);
+use Date::Calc qw(check_date);
+
+use base 'Exporter';
+# export by default the check_balance function and the constants
+our @EXPORT = qw(check_balance ALL WITHDRAWAL DEPOSIT);
+our @EXPORT_OK = qw(mobile_topup account_statement);
+
+my %cached_cfg;
+my $agent;
+my $lastop = 0;
+
+my $BASEURL = "https://www.open24.ie/";
+
+# constant to be used with the account_statement() function
+use constant {
+    ALL =>        0,
+    WITHDRAWAL => 1,
+    DEPOSIT =>    2,
+};
 
 =head2 C<$boolean = login($config_ref)> - B<private>
 
@@ -349,11 +351,39 @@ $from, $to, [$type])> - B<public>
 
 =over
 
+This function requires 4 mandatory arguments, the 5th is optional.
+
+=over
+
+=item 1. B<$config_ref>: the hash reference to the configuration
+
+=item 2. B<$account>: in the form account_name - account number
+
+=item 3. B<$from>: from date, in format dd/mm/yyyy
+
+=item 4. B<$to>: to date, in format dd/mm/yyyy
+
+=item 5. B<type> (optional): type of statement (optional). Default: ALL.
+It can be WITHDRAWAL, DEPOSIT or ALL.
+
+=back
+
+The function returns an array of hashes, one hash for each row of the statement.
+The array of hashes can be printed using, for example, a foreach loop like 
+this one:
+
+    foreach my $row (@statement) {
+        printf("%s | %s | %s | %s \n",
+            $row->{date},
+            $row->{description},
+            $row->{euro_amount},
+            $row->{balance});
+    }
+
 =back
 
 =cut
 
-# TODO
 sub account_statement {
     
     my ($self, $config_ref, $account, $from, $to, $type) = @_;
@@ -414,23 +444,16 @@ sub account_statement {
 
         # fill out the "from" date
         my @d = split "/", $from;
-        #ddlFromDay = $d[2];
         $agent->field('ddlFromDay', $d[2]);
-        #ddlFromMonth = $d[1];
         $agent->field('ddlFromMonth', $d[1]);
-        #ddlFromYear = $d[0];
         $agent->field('ddlFromYear', $d[0]);
 
         # fill out the "to" date
         @d = split "/", $to;
-        #ddlToDay
         $agent->field('ddlToDay', $d[2]);
-        #ddlToMonth
         $agent->field('ddlToMonth', $d[1]);
-        #ddlToYear
         $agent->field('ddlToYear', $d[0]);
 
-        # TODO: select transation type "all" "deposit" or "withdrawals" ?
         if(defined $type) {
             $agent->field('grpTransType', 'rbWithdrawal') 
                 if($type == WITHDRAWAL);
@@ -464,18 +487,43 @@ sub account_statement {
                 if $config_ref->{debug};
         }
 
-        # TODO
         # parse output page clicking "next" button until the
         # button "another statement" is present. all the data must
-        # be inserted into an array.
-        # the array should contain [date, description, euro amount, balance]
-        my $p = HTML::TokeParser->new(\$agent->response()->content());
-        my @table_text;
-        while (my $tok = $p->get_tag('table')) {
-            if(defined $tok->[1]{id}) {
-                if($tok->[1]{id} eq 'tblTransactions'){
-                    $_ = $p->get_text('/table');
+        # be inserted into an array of hashes.
+        # the array should contain an hash per row.
+        # every hash contains [date, description, euro_amount, balance]
+        my $hash_ref = {};
+        while($agent->content =~ /Next/i) {
+            my $p = HTML::TokeParser->new(\$agent->response()->content());
+            while (my $tok = $p->get_tag('table')) {
+                if(defined $tok->[1]{id}) {
+                    if($tok->[1]{id} eq 'tblTransactions'){
+                        while(my $tok2 = $p->get_tag('tr')) {
+                            $hash_ref = {};
+                            my $text = $p->get_trimmed_text('/tr');
+                            #TODO: improve regexp!
+                            # this matches the html row
+                            # dd/mm/yyyy description [-/+] amount balance [-/+]
+                            # example -> 29/09/2008 DUNNES STEPHEN 29/09 - 45.00 25000.00 +
+                            if($text =~ /^(\d{2}\/\d{2}\/\d{4}) (.+) ([-\+] [\d\.]+) ([\d\.]+ [-\+])$/) {
+                                if($config_ref->{debug}) {
+                                    print STDERR "line: $text \n";
+                                }
+                                $hash_ref->{date} = $1;
+                                $hash_ref->{description} = $2;
+                                $hash_ref->{euro_amount} = $3;
+                                $hash_ref->{balance} = $4;
+                                push @ret_array, $hash_ref;
+                            }
+                        }
+                    }
                 }
+            }
+            $agent->field('__EVENTTARGET', 'lbtnShow');
+            $res = $agent->submit();
+            # something wrong?
+            if(!$res->is_success) {
+                croak("Unable to get login page!");
             }
         }
 
@@ -513,6 +561,24 @@ sub logoff {
 1;
 
 __END__
+
+=head1 INSTALLATION
+
+To install this module type the following:
+
+    perl Makefile.PL
+    make
+    make test
+    make install
+
+=head1 DEPENDENCIES
+
+This module requires these other modules and libraries:
+
+    WWW::Mechanize
+    HTML::TokeParser
+    Date::Calc
+
 
 =head1 MODULE HOMEPAGES
 
