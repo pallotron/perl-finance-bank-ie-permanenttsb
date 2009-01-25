@@ -42,7 +42,7 @@ to an hash which contains the configuration:
 
 package Finance::Bank::IE::PermanentTSB;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 use strict;
 use warnings;
@@ -150,7 +150,7 @@ sub login {
 
     # something wrong?
     if(!$res->is_success) {
-        croak("Unable to get login page!");
+        croak("Unable to get page!");
     }
 
     # page not found?
@@ -171,7 +171,7 @@ sub login {
     $res = $agent->submit();
     # something wrong?
     if(!$res->is_success) {
-        croak("Unable to get login page!");
+        croak("Unable to get page!");
     }
     $agent->save_content("/var/tmp/step1_result.html") if $config_ref->{debug};
 
@@ -437,7 +437,7 @@ sub account_statement {
         $res = $agent->submit();
         # something wrong?
         if(!$res->is_success) {
-            croak("Unable to get login page!");
+            croak("Unable to get page!");
         }
         $agent->save_content("/var/tmp/statement_page2.html") 
             if $config_ref->{debug};
@@ -465,7 +465,7 @@ sub account_statement {
         $res = $agent->submit();
         # something wrong?
         if(!$res->is_success) {
-            croak("Unable to get login page!");
+            croak("Unable to get page!");
         }
         $agent->save_content("/var/tmp/statement_result.html") 
             if $config_ref->{debug};
@@ -481,19 +481,20 @@ sub account_statement {
             $agent->field('__EVENTTARGET', 'lbtnShow');
             $res = $agent->submit();
             if(!$res->is_success) {
-                croak("Unable to get login page!");
+                croak("Unable to get page!");
             }
             $agent->save_content("/var/tmp/statement_res_after_6months.html")
                 if $config_ref->{debug};
         }
-
+        
         # parse output page clicking "next" button until the
         # button "another statement" is present. all the data must
         # be inserted into an array of hashes.
         # the array should contain an hash per row.
         # every hash contains [date, description, euro_amount, balance]
         my $hash_ref = {};
-        while($agent->content =~ /Next/i) {
+        my $visa = 0;
+        while (1) {
             my $p = HTML::TokeParser->new(\$agent->response()->content());
             while (my $tok = $p->get_tag('table')) {
                 if(defined $tok->[1]{id}) {
@@ -506,24 +507,53 @@ sub account_statement {
                             # dd/mm/yyyy description [-/+] amount balance [-/+]
                             # example -> 29/09/2008 DUNNES STEPHEN 29/09 - 45.00 25000.00 +
                             if($text =~ /^(\d{2}\/\d{2}\/\d{4}) (.+) ([-\+] [\d\.]+) ([\d\.]+ [-\+])$/) {
-                                if($config_ref->{debug}) {
-                                    print STDERR "line: $text \n";
-                                }
+                                # this is a normal current account
+                                # statement 
                                 $hash_ref->{date} = $1;
                                 $hash_ref->{description} = $2;
                                 $hash_ref->{euro_amount} = $3;
                                 $hash_ref->{balance} = $4;
+                                $hash_ref->{euro_amount} =~ s/\s//g;
+                                if($hash_ref->{balance} =~ /^([\d\.]+) ([-\+])$/) {
+                                    if($2 eq '+') {
+                                        $hash_ref->{balance} = "+".$1;
+                                    }
+                                    if($2 eq '-') {
+                                        $hash_ref->{balance} = "-".$1;
+                                    }
+                                }
+                                push @ret_array, $hash_ref;
+                            }
+                            if($text =~ /^(\d{2}\/\d{2}\/\d{4}) (\d{2}\/\d{2}\/\d{4}) (.+) ([-\+] [\d\.]+)$/) {
+                                # this is a visa card statement
+                                $visa = 1;
+                                $hash_ref->{date} = $1;
+                                $hash_ref->{description} = $3;
+                                $hash_ref->{euro_amount} = $4;
                                 push @ret_array, $hash_ref;
                             }
                         }
                     }
                 }
             }
-            $agent->field('__EVENTTARGET', 'lbtnShow');
+            # if we are at the last page we will find a button called
+            # Another Statement, exit from the while loop
+            if($agent->content =~ /Another Statement/is) {
+                last;
+            } else {
+                # the "next" buttons have different target names
+                # it depdends if we are watching a visa card or a normal
+                # current account
+                if($visa) {
+                    $agent->field('__EVENTTARGET', 'lBtnAnother1');
+                } else {
+                    $agent->field('__EVENTTARGET', 'lbtnShow');
+                }
+            }
             $res = $agent->submit();
             # something wrong?
             if(!$res->is_success) {
-                croak("Unable to get login page!");
+                croak("Unable to get page!");
             }
         }
 
@@ -540,12 +570,16 @@ sub account_statement {
 
 }
 
-#TODO
+# TODO: implement this
+sub statement_graph {
+}
+
+# TODO: implement this
 sub funds_transfer {
 
 }
 
-#TODO
+# TODO: implement this
 sub mobile_topup {
 
 }
