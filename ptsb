@@ -81,6 +81,7 @@ sub parse_options {
 
     # default config file is in ~/.ptsbrc
     $cf->{cfgfile} = $ENV{HOME}."/.ptsbrc";
+    $cf->{no_balance} = 0;
 
     # =o -> Extended integer, Perl style. This can be either an optional
     # leading plus or minus sign, followed by a sequence of digits, or
@@ -189,6 +190,8 @@ sub balance {
 sub statement {
 
     my $cf = shift;
+    my $counter_deposit;
+    my $counter_withdrawal;
 
     my %config = (
         "open24numba" => $cf->{open24_num},
@@ -213,12 +216,29 @@ sub statement {
             $row->{date},
             $row->{description},
             $row->{euro_amount},
-            $row->{balance},
         );
         if(not $cf->{no_balance}) {
-            print $cf->{no_balance}," |";
+            print " | ", $row->{balance}," |";
         }
         print "\n";
+        if($row->{euro_amount}<0) {
+            $counter_withdrawal += $row->{euro_amount};
+        } else {
+            $counter_deposit += $row->{euro_amount};
+        }
+
+    }
+
+    print "\n=== Totals ===\n";
+    if($cf->{statement_type} == ALL or $cf->{statement_type} == DEPOSIT) {
+        print "Total deposit: $counter_deposit\n";
+    }
+    if($cf->{statement_type} == ALL or $cf->{statement_type} ==
+        WITHDRAWAL) {
+        print "Total withdrawal: $counter_withdrawal\n";
+    }
+    if($cf->{statement_type} == ALL) {
+        printf("Profit: %f\n", $counter_deposit+$counter_withdrawal);
     }
 
     Finance::Bank::IE::PermanentTSB->logoff();
