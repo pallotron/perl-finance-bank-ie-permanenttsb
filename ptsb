@@ -109,6 +109,8 @@ sub parse_options {
         "account-type|a=s" => \$cf->{'acc_type'},
         "account-num|n=s" => \$cf->{'acc_no'},
         "no-balance|N" => \$cf->{'no_balance'},
+        "regexp|r=s" => \$cf->{'regexp'},
+        "version|v" => \$cf->{'version'},
     ) or $error = 1;
 
     usage if($error or $cf->{'help'});
@@ -152,6 +154,11 @@ sub validate_options {
         }
     }
 
+    if(defined $cf->{version}) {
+        print Finance::Bank::IE::PermanentTSB->VERSION, "\n";
+        exit 0;
+    }
+
     # all the other check are made by Finance::Bank::IE::PermanentTSB
 }
 
@@ -175,15 +182,36 @@ sub balance {
 
     print STDERR Dumper(@balance) if($cf->{debug});
 
+    my $colname = "Account name";
+    my $coldigit = "Acc. #";
+    my $colbal = "Balance";
+    my $colavail = "Available";
+    for(0...58) { 
+        print("-"); 
+    }
+    print "\n";
+
+    printf("| %18s | %6s | %11s | %11s |", $colname, $coldigit, $colbal,
+        $colavail);
+    print "\n";
+    for(0...58) { 
+        print("-"); 
+    }
+    print "\n";
+
     foreach my $row (@balance) {
-        printf("%s | %s | %s | %s\n",
+        printf("| %18s | %6s | %11s | %11s |\n",
             $row->{accname},
             $row->{accno},
             $row->{accbal},
             $row->{availbal});
     }
+    
+    for(0...58) { 
+        print("-"); 
+    }
+    print "\n";
 
-    Finance::Bank::IE::PermanentTSB->logoff();
 
 }
 
@@ -211,23 +239,71 @@ sub statement {
 
     print STDERR Dumper(@statement) if($cf->{debug});
 
-    foreach my $row (@statement) {
-        printf("%s | %s | %s",
-            $row->{date},
-            $row->{description},
-            $row->{euro_amount},
-        );
-        if(not $cf->{no_balance}) {
-            print " | ", $row->{balance}," |";
+    if ($cf->{no_balance}) {
+        for(0...54) { 
+            print("-"); 
         }
-        print "\n";
-        if($row->{euro_amount}<0) {
-            $counter_withdrawal += $row->{euro_amount};
+    } else {
+        for(0...68) { 
+            print("-"); 
+        }
+    }
+    print "\n";
+    my $coldate = "Date"; 
+    my $coldesc = "Description";
+    my $colam   = "Amount";
+    my $colbal  = "Balance";
+    printf("| %10s | %24s | %11s |", $coldate, $coldesc, $colam);
+    printf(" %11s |", $colbal) if(not $cf->{no_balance});
+    print "\n";
+    if ($cf->{no_balance}) {
+        for(0...54) { 
+            print("-"); 
+        }
+    } else {
+        for(0...68) { 
+            print("-"); 
+        }
+    }
+    print "\n";
+
+    my $print = 1;
+    foreach my $row (@statement) {
+        my $regex = $cf->{regexp};
+        if($row->{description} =~ /$regex/is) {
+            $print = 1;
         } else {
-            $counter_deposit += $row->{euro_amount};
+            $print = 0;
+        }
+        if($print) {
+            printf("| %s | %24s | %11s ",
+                $row->{date},
+                $row->{description},
+                $row->{euro_amount},
+            );
+            if(not $cf->{no_balance}) {
+                printf "| %11s ", $row->{balance};
+            }
+            print "|\n";
+            if($row->{euro_amount}<0) {
+                $counter_withdrawal += $row->{euro_amount};
+            } else {
+                $counter_deposit += $row->{euro_amount};
+            }
         }
 
     }
+    if ($cf->{no_balance}) {
+        for(0...54) { 
+            print("-"); 
+        }
+    } else {
+        for(0...68) { 
+            print("-"); 
+        }
+    }
+    print "\n";
+
 
     print "\n=== Totals ===\n";
     if($cf->{statement_type} == ALL or $cf->{statement_type} == DEPOSIT) {
@@ -240,9 +316,6 @@ sub statement {
     if($cf->{statement_type} == ALL) {
         printf("Profit: %f\n", $counter_deposit+$counter_withdrawal);
     }
-
-    Finance::Bank::IE::PermanentTSB->logoff();
-
 
 }
 
@@ -325,21 +398,29 @@ card number.
 
 Do not print balance when printing statement.
 
+=item B<-r | --regexp>
+
+When printing statement grep using the regexp provided
+
+=item B<-v | --version>
+
+Print version
+
 =back
 
 =head1 CONFIGURATION FILE
 
 Configuration file default location is F<~/.ptsbrc> and it looks like this:
 
--------8< -- ~/.ptsbrc -->8----------
+    -------8< -- ~/.ptsbrc -->8----------
 
-open24_number=your_open24_number
+    open24_number=your_open24_number
 
-password=your_internet_password
+    password=your_internet_password
 
-pan=your_personal_access_number
+    pan=your_personal_access_number
 
--------8< --------------->8----------
+    -------8< --------------->8----------
 
 However you can put wherever you want. Just remember to use then the
 option -F F</path/to/your/location>.

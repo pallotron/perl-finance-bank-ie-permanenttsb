@@ -5,10 +5,6 @@
 - balance_graph(accountname, from, to, fileoutput)
   uses gnuplot to graph
 
-- main shell command called ptsb to do operation
-  on a permanent tsb account
-  it works also as an example of usage
-
 - test units (using Mock Objects)
 
 - check on login for invalid credentials
@@ -16,5 +12,3 @@
   - wrong username
   - wrong password
   - wrong pan
-
-- log off problem

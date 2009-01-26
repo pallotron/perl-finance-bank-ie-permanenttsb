@@ -30,7 +30,7 @@ accounts or third party accounts.
 
 package Finance::Bank::IE::PermanentTSB;
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 use strict;
 use warnings;
@@ -38,7 +38,7 @@ use Data::Dumper;
 use WWW::Mechanize;
 use HTML::TokeParser;
 use Carp qw(croak carp);
-use Date::Calc qw(check_date);
+use Date::Calc qw(check_date Delta_Days);
 
 use base 'Exporter';
 # export by default the check_balance function and the constants
@@ -439,6 +439,18 @@ sub account_statement {
     my $account = $acc_type." - ".$acc_no;
 
     if(defined $from and defined $to) {
+
+        # $from should be > of $to
+
+        my @d_from = split "/", $from;
+        my @d_to   = split "/", $to;
+        if (Delta_Days($d_from[0],$d_from[1],$d_from[2],
+                       $d_to[0],$d_to[1],$d_to[2]) <= 0) {
+
+            croak("Date range $from -> $to invalid.");
+
+        }
+
         # check date_from, date_to
         foreach my $date ($from, $to) {
             # date should be in format yyyy/mm/dd
@@ -537,6 +549,12 @@ sub account_statement {
             }
             $agent->save_content("./statement_res_after_6months.html")
                 if $config_ref->{debug};
+        }
+
+        if($agent->content =~ /INCORRECT DATE CRITERIA ENTERED: 'TO DATE' WAS IN THE FUTURE./is) {
+
+            carp("Incorrect date criteria entered: 'to date' was in the".
+                 " future! Resetting to the default date. ");
         }
         
         # parse output page clicking "next" button until the
@@ -642,6 +660,10 @@ sub logoff {
 
     my $res = $agent->get($BASEURL . '/online/DoLogOff.aspx');
     $agent->save_content("./logoff.html") if $config_ref->{debug};
+}
+
+END {
+    logoff if $lastop;
 }
 
 1;
