@@ -1,8 +1,6 @@
 - convert to OOP rather than functional programming
 
-- modify account_statement to:
-
-  account_statement($config,  $acc_number, $acc_type, ...);
+- ~/.ptsb should be gpg encrypted
 
 - balance_graph(accountname, from, to, fileoutput)
   uses gnuplot to graph
