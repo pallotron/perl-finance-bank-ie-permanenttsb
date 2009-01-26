@@ -10,3 +10,11 @@
   it works also as an example of usage
 
 - test units (using Mock Objects)
+
+- check on login for invalid credentials
+  
+  - wrong username
+  - wrong password
+  - wrong pan
+
+- log off problem

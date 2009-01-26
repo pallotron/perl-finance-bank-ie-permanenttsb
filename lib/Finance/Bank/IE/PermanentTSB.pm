@@ -427,35 +427,40 @@ sub account_statement {
     $config_ref ||= \%cached_cfg;
     my $croak = ($config_ref->{croak} || 1);
 
-    if($acc_type ne SWITCH_ACCOUNT and $acc_type ne VISA_ACCOUNT) {
-        carp("Account type is invalid");
-        return undef;
+    if(defined $acc_type) { 
+        if($acc_type ne SWITCH_ACCOUNT and $acc_type ne VISA_ACCOUNT) {
+            carp("Account type is invalid");
+            return undef;
+        }
+    } else {
+        croak("Account type not defined");
     }
 
     my $account = $acc_type." - ".$acc_no;
-
-    print $account,"\n";
 
     if(defined $from and defined $to) {
         # check date_from, date_to
         foreach my $date ($from, $to) {
             # date should be in format yyyy/mm/dd
-            if(not $date  =~ m/^\d{4}\/\d{2}\/\d{2}$/) {
-                carp("Date $date should be in format 'yyyy/mm/dd'");
+            if(not $date  =~ /^\d{4}\/\d{2}\/\d{2}$/) {
+                croak("Date $date should be in format 'yyyy/mm/dd'");
                 return undef;
             }
             # date should be valid, this is using Date::Calc->check_date()
             my @d = split "/", $date;
             if (not check_date($d[0],$d[1],$d[2])) {
-                carp("Date $date is not valid!");
+                croak("Date $date is not valid!");
                 return undef;
             }
         }
+    } else {
+        croak("Date range not defined");
+        return undef;
     }
 
     if(defined $account) {
         if(not $account =~ m/.+ - \d{4}$/) {
-            carp("$account is invalid");
+            croak("$account is invalid");
             return undef;
         }
     }
