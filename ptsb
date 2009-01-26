@@ -102,7 +102,7 @@ sub parse_options {
         "debug|D" => \$cf->{'debug'},
         "balance|b" => \$cf->{'balance'},
         "statement|s" => \$cf->{'statement'},
-        "statement-type|T" => \$cf->{'statement_type'},
+        "statement-type|T=s" => \$cf->{'statement_type'},
         "from-date|f=s" => \$cf->{'fromdate'},
         "to-date|t=s" => \$cf->{'todate'},
         "account-type|a=s" => \$cf->{'acc_type'},
@@ -133,6 +133,19 @@ sub validate_options {
             case "v" { $cf->{acc_type} = VISA_ACCOUNT; }
             else     {
                 print("Account type invalid\n");
+                exit -1;
+            }
+        }
+    }
+    
+    if(defined $cf->{statement_type}) {
+        # acc_type must be 'c' or 'v'
+        switch ($cf->{statement_type}) {
+            case /WITHDRAWAL/is { $cf->{statement_type} = WITHDRAWAL; }
+            case /DEPOSIT/is { $cf->{statement_type} = DEPOSIT; }
+            case /ALL/is { $cf->{statement_type} = ALL; }
+            else     {
+                print("Statement type invalid\n");
                 exit -1;
             }
         }
