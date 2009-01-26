@@ -1,3 +1,9 @@
+- convert to OOP rather than functional programming
+
+- modify account_statement to:
+
+  account_statement($config,  $acc_number, $acc_type, ...);
+
 - balance_graph(accountname, from, to, fileoutput)
   uses gnuplot to graph
 
@@ -5,4 +11,4 @@
   on a permanent tsb account
   it works also as an example of usage
 
-- test units
+- test units (using Mock Objects)
