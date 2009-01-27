@@ -30,7 +30,7 @@ accounts or third party accounts.
 
 package Finance::Bank::IE::PermanentTSB;
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 use strict;
 use warnings;
@@ -377,7 +377,7 @@ sub check_balance {
 
 }
 
-=head2 C<@account_statement = account_statement($config_ref, $acc_tupe,
+=head2 C<@account_statement = account_statement($config_ref, $acc_type,
 $acc_no, $from, $to, [$type])> - B<public>
 
 =over
@@ -667,14 +667,17 @@ sub logoff {
     my $self = shift;
     my $config_ref = shift;
 
-    my $res = $agent->get($BASEURL . '/online/DoLogOff.aspx');
-    $agent->save_content("./logoff.html") if $config_ref->{debug};
-    $agent->field('__EVENTTARGET', 'lbtnContinue');
-    $agent->submit;
+    if(defined $agent) {
+
+        my $res = $agent->get($BASEURL . '/online/DoLogOff.aspx');
+        $agent->save_content("./logoff.html") if $config_ref->{debug};
+        $agent->field('__EVENTTARGET', 'lbtnContinue');
+        $agent->submit;
+    }
 }
 
 END {
-    logoff if $lastop;
+    logoff;
 }
 
 1;
