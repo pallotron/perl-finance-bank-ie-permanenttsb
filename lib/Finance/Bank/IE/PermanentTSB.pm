@@ -130,9 +130,10 @@ sub login {
         if (! defined( $config_ref->{$reqfield})) {
             if ($croak) {
                 croak("$reqfield not there!");
+                return undef;
             } else {
                 carp("$reqfield not there!");
-                return;
+                return undef;
             }
         }
     }
@@ -206,8 +207,15 @@ sub login {
 
     # Login - Step 2 of 2
     if(!$agent->content =~ /LOGIN STEP 2 OF 2/is) {
-        #TODO: check che content of the page and deal with it
+        croak("Problem while authenticating!\nPlease don't retry ".
+                "this 3 times in a row or you account will be locked!");
+        return undef;
     } else {
+        if($agent->content !~ /txtDigit/is) {
+            croak("Problem while authenticating!\nPlease don't retry ".
+                "this 3 times in a row or you account will be locked!");
+            return undef;
+        }
         set_pan_fields($agent, $config_ref);
         $res = $agent->submit();
         $agent->save_content("./step2_pan_result.html") 
@@ -339,7 +347,7 @@ sub check_balance {
     $config_ref ||= \%cached_cfg;
     my $croak = ($config_ref->{croak} || 1);
  
-    $self->login($config_ref) or return;
+    $self->login($config_ref) or return undef;
 
     $res = $agent->get($BASEURL . '/online/Account.aspx');
     print $agent->content if($config_ref->{debug});
@@ -373,7 +381,7 @@ sub check_balance {
         }
     }
 
-    return @array;
+    return \@array;
 
 }
 
@@ -478,9 +486,10 @@ sub account_statement {
     }
 
     # verify if the account exists inside the homebanking
-    my @account = $self->check_balance($config_ref);
+    my $acc = $self->check_balance($config_ref);
+    if(not defined $acc) { return undef; }
     my $found = 0;
-    foreach my $c (@account) {
+    foreach my $c (@$acc) {
         if($account  eq $c->{'accname'}." - ".$c->{'accno'}) {
             $found = 1;
             last;   
@@ -489,7 +498,7 @@ sub account_statement {
 
     if($found) {
 
-        $self->login($config_ref) or return;
+        $self->login($config_ref) or return undef;
 
         # go to the Statement page
         $res = $agent->get($BASEURL . '/online/Statement.aspx');
@@ -645,7 +654,7 @@ sub account_statement {
 
     }
 
-    return @ret_array;
+    return \@ret_array;
 
 }
 
