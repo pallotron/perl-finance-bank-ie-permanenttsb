@@ -1,15 +1,10 @@
+TODO
+====
+
 - convert to OOP rather than functional programming
 
 - balance_graph(accountname, from, to, fileoutput)
   uses gnuplot to graph
-
-- test units (using Mock Objects)
-
-- check on login for invalid credentials
-  
-  - wrong username
-  - wrong password
-  - wrong pan
 
 - ptsb new option:
 
@@ -22,3 +17,9 @@
   '>=300'
 
   the expression will test the euro amount column
+
+IN PROGRESS
+===========
+
+- test units (using Mock Objects)
+  in progress

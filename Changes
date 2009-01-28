@@ -1,5 +1,8 @@
 Revision history for Perl extension Finance::Bank::IE::PermanentTSB.
 
+0.09 Wed Jan 28 13:23:04 GMT 2009
+    - starting defining test units for both module and CLI
+
 0.08 Tue Jan 27 12:16:44 GMT 2009
     - ~/.ptsbrc file now encrypted using gnupg
       GnuPG and a priv/pub is now required to use ptsb
