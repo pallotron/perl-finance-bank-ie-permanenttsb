@@ -1,7 +1,8 @@
 use Test::MockObject;
 use Data::Dumper;
 
-use Test::More qw(no_plan);
+#use Test::More qw(no_plan);
+use Test::More tests => 12;
 use strict;
 use warnings;
 

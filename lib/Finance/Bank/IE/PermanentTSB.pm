@@ -684,10 +684,6 @@ sub account_statement {
 }
 
 # TODO: implement this
-sub statement_graph {
-}
-
-# TODO: implement this
 sub funds_transfer {
 
 }
