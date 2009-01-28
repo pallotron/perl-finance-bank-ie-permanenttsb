@@ -28,6 +28,7 @@ sub main {
     parse_options($cf);
     validate_options($cf);
 
+    print "Parsing configuration file...\n";
     # parse config file
     ($cf->{open24_num}, $cf->{pass}, $cf->{pan}) = 
         parse_configfile($cf->{cfgfile});
@@ -36,11 +37,11 @@ sub main {
 
     # execute options
     if($cf->{balance}) {
-        print "\nConnecting...\n";
+        print "\nConnecting...\n\n";
         balance($cf);
     }
     if($cf->{statement}) {
-        print "\nConnecting...\n";
+        print "\nConnecting...\n\n";
         statement($cf);
     }
 
@@ -155,6 +156,7 @@ sub parse_options {
         "no-balance|N" => \$cf->{'no_balance'},
         "regexp|r=s" => \$cf->{'regexp'},
         "version|v" => \$cf->{'version'},
+        "expression|e=s" => \$cf->{'expr'},
     ) or $error = 1;
 
     usage if($error or $cf->{'help'});
@@ -197,10 +199,12 @@ sub validate_options {
         
     }
 
-    if($cf->{acc_type} =~ /VISA/is) {
-        $cf->{no_balance} = 1;
-        $cf->{statement_type} = ALL;
-    }
+    if(defined $cf->{acc_type}) {
+        if($cf->{acc_type} =~ /VISA/is) {
+            $cf->{no_balance} = 1;
+            $cf->{statement_type} = ALL;
+        }
+    }   
 
     if(defined $cf->{version}) {
         print Finance::Bank::IE::PermanentTSB->VERSION, "\n";

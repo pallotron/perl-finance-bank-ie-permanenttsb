@@ -10,3 +10,15 @@
   - wrong username
   - wrong password
   - wrong pan
+
+- ptsb new option:
+
+  -e <expression> | --expression <expression>
+
+  where expression is a mathematical expression like
+
+  '<300'
+  '=300'
+  '>=300'
+
+  the expression will test the euro amount column
