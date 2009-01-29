@@ -6,6 +6,7 @@ use FindBin;
 use lib "$FindBin::RealBin/lib"; # load modules from "lib" subdir relative to this script
 
 use ptsb_util;
+use Data::Dumper;
 
 use strict;
 use warnings;
