@@ -51,6 +51,8 @@ my $lastop = 0;
 
 my $BASEURL = "https://www.open24.ie/";
 
+my $error = 0;
+
 =head1 CONSTANTS
 
 The constants below are used with the account_statement() function:
@@ -188,6 +190,11 @@ sub login {
 
     # 2nd agent->content call
     $content = $agent->content;
+    if($content =~ /Interruption Page/is) {
+        carp "Cannot authenticate on Open24.ie: site mantainance";
+        $error = 1;
+        return undef;
+    }
 
     # page not found?
     if($content =~ /Page Not Found/is) {
@@ -697,7 +704,7 @@ sub logoff {
     my $self = shift;
     my $config_ref = shift;
 
-    if(defined $agent) {
+    if(defined $agent and not $error) {
 
         my $res = $agent->get($BASEURL . '/online/DoLogOff.aspx');
         $agent->save_content("./logoff.html") if $config_ref->{debug};
