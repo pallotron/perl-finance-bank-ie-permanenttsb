@@ -17,6 +17,8 @@ TODO
   '>=300'
 
   the expression will test the euro amount column
+  echo " <    300" | perl -lne '/([<,>,>=,<=,=])\s*(\d*)/; print $1."-".$2'
+
 
 IN PROGRESS
 ===========

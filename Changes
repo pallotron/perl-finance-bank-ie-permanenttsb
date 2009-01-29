@@ -2,6 +2,20 @@ Revision history for Perl extension Finance::Bank::IE::PermanentTSB.
 
 0.1
     - exit gracefully when open24.ie site is on mantainance
+    - create package ptsb_util to remove all the functions
+      from the main CLI utility
+    - ptsb new option:
+
+          -e <expression> | --expression <expression>
+
+        where expression is a mathematical expression like
+
+        '<300'
+        '=300'
+        '>=300'
+
+        the expression will test the euro amount column
+        only lines matching the expression will be printed
 
 0.09 Wed Jan 28 13:23:04 GMT 2009
     - starting defining test units for both module and CLI
