@@ -5,6 +5,8 @@ use Date::Calc qw(check_date);
 use Switch;
 use File::Copy;
 use Data::Dumper;
+use FindBin;
+use lib "$FindBin::RealBin/lib";
 
 use Finance::Bank::IE::PermanentTSB;
 
@@ -91,6 +93,8 @@ sub parse_options {
     $cf->{cfgfile} = $ENV{HOME}."/.ptsbrc";
     $cf->{no_balance} = 0;
     $cf->{statement_type} = 'all';
+    # TODO : filename with pid and timestamp
+    $cf->{image} = '/tmp/file.png';
 
     # =o -> Extended integer, Perl style. This can be either an optional
     # leading plus or minus sign, followed by a sequence of digits, or
@@ -120,7 +124,9 @@ sub parse_options {
         "no-balance|N" => \$cf->{'no_balance'},
         "regexp|r=s" => \$cf->{'regexp'},
         "version|v" => \$cf->{'version'},
-        "expression|e=s" => \$cf->{'expr'},
+        "expr|e=s" => \$cf->{'expr'},
+        "i|image=s" => \$cf->{'image'},
+        "g|graph" => \$cf->{'graph'},
     ) or $error = 1;
 
     usage if($error or $cf->{'help'});
@@ -296,16 +302,21 @@ sub balance {
    
     print_balance_footer; 
 
-
 }
 
 sub statement {
 
     my $cf = shift;
+    my $plot = shift;
+
+    $plot ||= 0;
+
     my $counter_deposit = 0;
     my $counter_withdrawal = 0;
     my $initial_balance = 0;
     my $final_balance = 0;
+
+    my $gnuplot_tmpfile;
 
     my %config = (
         "open24numba" => $cf->{open24_num},
@@ -342,56 +353,58 @@ sub statement {
                 $print = 0;
             }
         }
-        #TODO: add check for -e | --expr
-        if($expr =~ /([<,>,=])\s*(\d*)/ and defined $expr) {
-            my $oper = $1;
-            my $val = scalar($2);
-            my $am = $row->{euro_amount};
-            $am =~ s/[\+-]//g;
-            if($cf->{debug}) {
-                print "\n";
-                print "am: '$am'\n";
-                print "1: '$oper'\n";
-                print "2: '$val'\n";
-            }
-            switch ($oper) {
-                case '<' {
-                    if ($am < $val) {
-                        $print = 1;
-                    } else {
+        # matches the value of --expr
+        if(defined $expr) {
+            if($expr =~ /([<,>,=])\s*(\d*)/) {
+                my $oper = $1;
+                my $val = scalar($2);
+                my $am = $row->{euro_amount};
+                $am =~ s/[\+-]//g;
+                if($cf->{debug}) {
+                    print "\n";
+                    print "am: '$am'\n";
+                    print "1: '$oper'\n";
+                    print "2: '$val'\n";
+                }
+                switch ($oper) {
+                    case '<' {
+                        if ($am < $val) {
+                            $print = 1;
+                        } else {
+                            $print = 0;
+                        }
+                    }
+                    case '>' {
+                        if ($am > $val) {
+                            $print = 1;
+                        } else {
+                            $print = 0;
+                        }
+                    }
+                    case '=' {
+                        if ($am == $val) {
+                            $print = 1;
+                        } else {
+                            $print = 0;
+                        }
+                    }
+                    case '<=' {
+                        if ($am <= $val) {
+                            $print = 1;
+                        } else {
+                            $print = 0;
+                        }
+                    }
+                    case '>=' {
+                        if ($am >= $val) {
+                            $print = 1;
+                        } else {
+                            $print = 0;
+                        }
+                    }
+                    else {
                         $print = 0;
                     }
-                }
-                case '>' {
-                    if ($am > $val) {
-                        $print = 1;
-                    } else {
-                        $print = 0;
-                    }
-                }
-                case '=' {
-                    if ($am == $val) {
-                        $print = 1;
-                    } else {
-                        $print = 0;
-                    }
-                }
-                case '<=' {
-                    if ($am <= $val) {
-                        $print = 1;
-                    } else {
-                        $print = 0;
-                    }
-                }
-                case '>=' {
-                    if ($am >= $val) {
-                        $print = 1;
-                    } else {
-                        $print = 0;
-                    }
-                }
-                else {
-                    $print = 0;
                 }
             }
         }
@@ -403,6 +416,10 @@ sub statement {
             );
             if(not $cf->{no_balance}) {
                 printf "| %11s ", $row->{balance};
+                #if(...) {
+                    $gnuplot_tmpfile .=
+                    $row->{date}."\t".$row->{balance}."\n";
+                #}
             }
             print "|\n";
             if($row->{euro_amount}<0) {
@@ -439,6 +456,89 @@ sub statement {
         printf "Delta Balance: %f\n", $final_balance-$initial_balance;
     }
 
+    if(defined $cf->{graph} and $cf->{graph}) {
+
+        # writing $gnuplot_tmpfile to file
+        # TODO : filename with pid and timestamp
+        open(TMP, '>/tmp/gnuplot_data');
+        print TMP $gnuplot_tmpfile;
+        close(TMP);
+
+        # open lib/Finance/Bank/IE/templates/gnuplot_print.gp
+        # an parse it replacing [% var %]:
+        #
+        # - [% ACCOUNT %]
+        # - [% OUTPUT %]
+        # - [% FILENAME %]
+        # - [% TITLE %]
+
+        # open the template and load it in @data
+        open(GNUPLOT, "<$FindBin::RealBin/lib/Finance/Bank/IE/templates/gnuplot_print.gp");
+        my @data=<GNUPLOT>;
+        close(GNUPLOT);
+
+        # define substitutions
+        my $template_hash = { 
+                ACCOUNT => $cf->{acc_type}."-".$cf->{acc_no},
+                OUTPUT => $cf->{image},
+                # TODO : filename with pid and timestamp
+                FILENAME => "/tmp/gnuplot_data",
+                TITLE => $cf->{acc_no},
+            };
+
+        print Dumper($template_hash) if($cf->{debug});
+
+        # fill template
+        for(my $i = 0; $i<$#data; $i++) {
+            $data[$i] =~ s{\[%\s*([_a-zA-Z0-9]+)\s*%\]}{ 
+                _fill_template_element($template_hash, $1);
+            }gsex;
+        }
+
+        # create the gnuplog command file
+        # TODO : filename with pid and timestamp
+        open(TMP, ">/tmp/gnuplot_print");
+        foreach my $d (@data) {
+            print TMP $d;
+        }
+        close(TMP);
+
+        # calling gnuplot
+        print "\n=== Plotting === \n";
+        print "Calling GnuPlot...\n";
+        my $res = `which gnuplot`;
+        if(!defined $res) { 
+            print "gnuplot is not installaed on this machine!\n";
+        } else {
+            system('gnuplot /tmp/gnuplot_print');
+            print "done.\n";
+        }
+
+        print "Cleaning up...\n";
+        # unlink the tmp files
+        # TODO : filename with pid and timestamp
+        unlink ('/tmp/gnuplot_data');
+        unlink ('/tmp/gnuplot_print');
+        if(defined $cf->{image} and -e $cf->{image}) {
+            # TODO : filename with pid and timestamp
+            if($cf->{image} eq "/tmp/file.png") {
+                print "PNG file has been created in ".$cf->{image}."\n";
+            }
+        } else {
+            unlink ($cf->{image});
+        }
+    }
+
+}
+
+sub _fill_template_element {
+    my ($hash, $name) = @_;
+    if (!defined $hash->{$name}) {
+        warn "undefined template tag: [\% $name \%]\n";
+        return '';
+    } else {
+        return $hash->{$name};
+    }
 }
 
 1;
