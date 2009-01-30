@@ -93,8 +93,7 @@ sub parse_options {
     $cf->{cfgfile} = $ENV{HOME}."/.ptsbrc";
     $cf->{no_balance} = 0;
     $cf->{statement_type} = 'all';
-    # TODO : filename with pid and timestamp
-    $cf->{image} = '/tmp/file.png';
+    $cf->{image} = '/tmp/file.png.'.$$.'.'.time;
 
     # =o -> Extended integer, Perl style. This can be either an optional
     # leading plus or minus sign, followed by a sequence of digits, or
@@ -130,6 +129,8 @@ sub parse_options {
     ) or $error = 1;
 
     usage if($error or $cf->{'help'});
+
+    usage if(!defined $cf->{graph});
 
 }
 
@@ -318,6 +319,8 @@ sub statement {
 
     my $gnuplot_tmpfile;
 
+    my $error = 0;
+
     my %config = (
         "open24numba" => $cf->{open24_num},
         "password" => $cf->{pass},
@@ -459,8 +462,8 @@ sub statement {
     if(defined $cf->{graph} and $cf->{graph}) {
 
         # writing $gnuplot_tmpfile to file
-        # TODO : filename with pid and timestamp
-        open(TMP, '>/tmp/gnuplot_data');
+        my $tmp_data = '/tmp/gnuplot_data'.$$.'.'.time;
+        open(TMP, ">$tmp_data");
         print TMP $gnuplot_tmpfile;
         close(TMP);
 
@@ -481,8 +484,7 @@ sub statement {
         my $template_hash = { 
                 ACCOUNT => $cf->{acc_type}."-".$cf->{acc_no},
                 OUTPUT => $cf->{image},
-                # TODO : filename with pid and timestamp
-                FILENAME => "/tmp/gnuplot_data",
+                FILENAME => $tmp_data,
                 TITLE => $cf->{acc_no},
             };
 
@@ -496,8 +498,8 @@ sub statement {
         }
 
         # create the gnuplog command file
-        # TODO : filename with pid and timestamp
-        open(TMP, ">/tmp/gnuplot_print");
+        my $gnu_print = '/tmp/gnuplot_print'.$$.'.'.time;
+        open(TMP, ">$gnu_print");
         foreach my $d (@data) {
             print TMP $d;
         }
@@ -507,23 +509,21 @@ sub statement {
         print "\n=== Plotting === \n";
         print "Calling GnuPlot...\n";
         my $res = `which gnuplot`;
-        if(!defined $res) { 
-            print "gnuplot is not installaed on this machine!\n";
+        chop $res;
+        if(!defined $res or not -e $res or not -x $res) { 
+            print STDERR "problems with gnuplot! maybe not installed or permission problem?\n";
+            $error = 1;
         } else {
-            system('gnuplot /tmp/gnuplot_print');
+            system("gnuplot $gnu_print");
             print "done.\n";
         }
 
         print "Cleaning up...\n";
         # unlink the tmp files
-        # TODO : filename with pid and timestamp
-        unlink ('/tmp/gnuplot_data');
-        unlink ('/tmp/gnuplot_print');
-        if(defined $cf->{image} and -e $cf->{image}) {
-            # TODO : filename with pid and timestamp
-            if($cf->{image} eq "/tmp/file.png") {
-                print "PNG file has been created in ".$cf->{image}."\n";
-            }
+        unlink ($tmp_data);
+        unlink ($gnu_print);
+        if($cf->{image} !~ /^\/tmp\/file\.png\.\d+\.\d+$/ and not $error){
+            print "PNG file has been created in ".$cf->{image}."\n";
         } else {
             unlink ($cf->{image});
         }
