@@ -130,7 +130,7 @@ sub parse_options {
 
     usage if($error or $cf->{'help'});
 
-    usage if(!defined $cf->{graph});
+    usage if(defined $cf->{graph} and $cf->{graph} eq '');
 
 }
 
@@ -346,7 +346,9 @@ sub statement {
     print_statement_header($cf->{no_balance});
 
     my $print = 1;
-    foreach my $row (@$statement) {
+    #foreach my $row (@$statement) {
+    for(my $i=0; $i<scalar($#$statement); $i++) {
+        my $row = $statement->[$i];
         my $regex = $cf->{regexp};
         my $expr = $cf->{expr};
         if(defined $row->{description} and defined $cf->{regexp}) {
@@ -419,10 +421,12 @@ sub statement {
             );
             if(not $cf->{no_balance}) {
                 printf "| %11s ", $row->{balance};
-                #if(...) {
+                if ($statement->[($i+1)]->{date} ne
+                    $statement->[$i]->{date}) {
+
                     $gnuplot_tmpfile .=
                     $row->{date}."\t".$row->{balance}."\n";
-                #}
+                }
             }
             print "|\n";
             if($row->{euro_amount}<0) {
@@ -433,6 +437,10 @@ sub statement {
         }
 
     }
+
+    $gnuplot_tmpfile .=
+        $statement->[$#$statement]->{date}."\t".
+        $statement->[$#$statement]->{balance}."\n";
 
     print_statement_footer($cf->{no_balance});
 
