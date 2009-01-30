@@ -1,5 +1,11 @@
 package ptsb_util;
 
+=head1 NAME
+
+This is a package which contains a set of functions used by the CLI utility.
+
+=cut
+
 use Getopt::Long;
 use Date::Calc qw(check_date);
 use Switch;
