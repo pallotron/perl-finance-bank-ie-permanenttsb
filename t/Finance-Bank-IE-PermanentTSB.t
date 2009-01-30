@@ -392,6 +392,7 @@ diag("\n\n\n\ntesting: account_statement()\n\n") if($DEBUG);
 @got = Finance::Bank::IE::PermanentTSB->account_statement(
     \%config,
     SWITCH_ACCOUNT, '0220', '2008/12/01','2009/01/27', ALL);
+print Dumper(@got) if ($DEBUG);
 is_deeply( \@got, \@expected);
 
 #---------------------------------------------------------------------------

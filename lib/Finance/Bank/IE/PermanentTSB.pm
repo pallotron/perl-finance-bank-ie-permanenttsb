@@ -233,10 +233,12 @@ sub login {
                 "this 3 times in a row or you account will be locked!");
             return undef;
         }
+        print $content if($config_ref->{debug});
         set_pan_fields($agent, $config_ref);
         $res = $agent->submit();
         $agent->save_content("./step2_pan_result.html") 
             if $config_ref->{debug};
+        print $content if($config_ref->{debug});
     }
 
     return 1;
@@ -367,8 +369,6 @@ sub check_balance {
  
     $self->login($config_ref) or return undef;
 
-    $res = $agent->get($BASEURL . '/online/Account.aspx');
-    print $agent->content if($config_ref->{debug});
     my $p = HTML::TokeParser->new(\$agent->content());
     my $i = 0;
     my @array;
