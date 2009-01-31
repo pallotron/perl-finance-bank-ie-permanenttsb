@@ -2,7 +2,7 @@ package ptsb_util;
 
 =head1 NAME
 
-ptsb_util
+ptsb_util \- functions used by the Finance::Bank::IE::PermanentTSB CLI
 
 This is a package which contains a set of functions used by the CLI utility.
 
