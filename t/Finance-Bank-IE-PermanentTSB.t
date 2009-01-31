@@ -97,15 +97,19 @@ ok(Finance::Bank::IE::PermanentTSB->login(\%config), "homebanking login");
 diag("\n\n\n\ntesting login with missing parameters \n\n") if($DEBUG);
 $i=0;
 %config = ( "open24numba" => undef, "password" => 'test', "pan" => 'test' );
-is(Finance::Bank::IE::PermanentTSB->login(\%config), undef, "missing open24 number");
+my $s;
+eval {$s = Finance::Bank::IE::PermanentTSB->login(\%config);};
+ok((not defined $s),"login with missing parameters 1");
 
 $i=0;
 %config = ( "open24numba" => 'test', "password" => undef, "pan" => 'test');
-is(Finance::Bank::IE::PermanentTSB->login(\%config), undef, "missing pass");
+eval {$s = Finance::Bank::IE::PermanentTSB->login(\%config);};
+ok((not defined $s),"login with missing parameters 2");
 
 $i=0;
 %config = ( "open24numba" => 'test', "password" => 'test', "pan" => undef );
-is(Finance::Bank::IE::PermanentTSB->login(\%config), undef, "missing pan");
+eval {$s = Finance::Bank::IE::PermanentTSB->login(\%config);};
+ok((not defined $s),"login with missing parameters 3");
 
 #---------------------------------------------------------------------------
 #  test - account balance
