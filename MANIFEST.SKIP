@@ -9,3 +9,11 @@ blib
 t/tmp
 .svn
 .git
+t/data
+t/data/balance_homepage.html
+t/data/loginpage.html
+t/data/statement_page2.html
+t/data/loginpage_step2.html
+t/data/statement_page.html
+t/data/statement_page3.html
+t/data/statement_page1.html
