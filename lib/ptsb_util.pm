@@ -293,9 +293,13 @@ sub balance {
         $cf->{todate});
 
 
-    if($balance->[0]->{accno} eq '') {
-        print "Error while retrieving the content...\n";
-        return;
+    if(defined $balance->[0]->{accno}) {
+        if($balance->[0]->{accno} eq '') {
+            print "Error while retrieving the content...\n";
+            return;
+        }
+    } else {
+        exit -1;
     }
 
     print STDERR Dumper(\$balance) if($cf->{debug});
