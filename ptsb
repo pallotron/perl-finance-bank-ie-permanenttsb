@@ -154,6 +154,10 @@ Print graph of the statement using gnuplot. Gnuplot is required!
 
 Save PNG image in path.
 
+=item B<-o F<filename> | --output F<filename>>
+
+Save the output of the statement inside a CSV file named F<filename>.
+
 =item B<-v | --version>
 
 Print version

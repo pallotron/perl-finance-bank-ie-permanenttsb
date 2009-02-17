@@ -134,6 +134,7 @@ sub parse_options {
         "expr|e=s" => \$cf->{'expr'},
         "i|image=s" => \$cf->{'image'},
         "g|graph" => \$cf->{'graph'},
+        "o|output" => \$cf->{'csv'},
     ) or $error = 1;
 
     usage if($error or $cf->{'help'});
@@ -175,7 +176,6 @@ sub validate_options {
                 exit -1;
             }
         }
-        
     }
 
     if(defined $cf->{acc_type}) {
