@@ -157,6 +157,11 @@ Save PNG image in path.
 =item B<-o F<filename> | --output F<filename>>
 
 Save the output of the statement inside a CSV file named F<filename>.
+CSV format is:
+
+date,description,amount,balance
+
+last field presence depends on the -N flag.
 
 =item B<-v | --version>
 

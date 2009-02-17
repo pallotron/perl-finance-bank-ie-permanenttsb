@@ -134,7 +134,7 @@ sub parse_options {
         "expr|e=s" => \$cf->{'expr'},
         "i|image=s" => \$cf->{'image'},
         "g|graph" => \$cf->{'graph'},
-        "o|output" => \$cf->{'csv'},
+        "o|output=s" => \$cf->{'csv'},
     ) or $error = 1;
 
     usage if($error or $cf->{'help'});
@@ -333,6 +333,7 @@ sub statement {
     my $gnuplot_tmpfile;
 
     my $error = 0;
+    my $csv = 0;
 
     my %config = (
         "open24numba" => $cf->{open24_num},
@@ -355,6 +356,15 @@ sub statement {
     }
 
     print STDERR Dumper(\$statement) if($cf->{debug});
+
+    if(defined $cf->{csv}) {
+        if(open(CSV, ">".$cf->{csv})) {
+            $csv = 1;
+        } else {
+            print STDERR "Error opening file ".$cf->{csv}.": $!\n";
+            $csv = 0;
+        }
+    }
 
     print_statement_header($cf->{no_balance});
 
@@ -447,9 +457,17 @@ sub statement {
             } else {
                 $counter_deposit += $row->{euro_amount};
             }
+            if($csv) {
+                printf CSV "%s,%s,%s", $row->{date}, $row->{description},
+                    $row->{euro_amount};
+                print CSV ",", $row->{balance} if(not $cf->{no_balance});
+                print CSV "\n";
+            }
         }
 
     }
+
+    close CSV if ($csv);
 
     $gnuplot_tmpfile .=
         $statement->[$#$statement]->{date}."\t".
