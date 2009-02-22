@@ -1,10 +1,10 @@
 TODO
 ====
 
+- -d accepts string as week, thismonth, lastmonth, 2 months ago, april, etc etc
 - convert to OOP rather than functional programming
 - mobile_topup and money_transfer (with check >50)
 - Graphical Interface?
-- Store CSV file
 
 IN PROGRESS
 ===========
