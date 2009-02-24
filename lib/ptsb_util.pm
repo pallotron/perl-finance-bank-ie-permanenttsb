@@ -19,7 +19,6 @@ use lib "$FindBin::RealBin/lib";
 use Finance::Bank::IE::PermanentTSB;
 
 use strict;
-use warnings;
 
 sub usage {
   use Pod::Usage;
@@ -369,8 +368,8 @@ sub statement {
     print_statement_header($cf->{no_balance});
 
     my $print = 1;
-    #foreach my $row (@$statement) {
-    for(my $i=0; $i<scalar($#$statement); $i++) {
+    my $tot = ($#$statement + 1);
+    for(my $i=0; $i<$tot; $i++) {
         my $row = $statement->[$i];
         my $regex = $cf->{regexp};
         my $expr = $cf->{expr};
@@ -464,7 +463,6 @@ sub statement {
                 print CSV "\n";
             }
         }
-
     }
 
     close CSV if ($csv);
@@ -567,7 +565,6 @@ sub statement {
             unlink ($cf->{image});
         }
     }
-
 }
 
 sub _fill_template_element {
